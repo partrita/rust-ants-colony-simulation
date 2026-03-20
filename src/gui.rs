@@ -89,11 +89,18 @@ fn settings_dialog(
             egui::CollapsingHeader::new("Settings")
                 .default_open(true)
                 .show(ui, |ui| {
-                    ui.checkbox(&mut settings.is_show_home_ph, "Home ph");
-                    ui.checkbox(&mut settings.is_show_food_ph, "Food ph");
-                    ui.checkbox(&mut settings.is_show_ants_path, "Paths");
+                    ui.checkbox(&mut settings.is_show_home_ph, "Home ph")
+                        .on_hover_text("Shortcut: H");
+                    ui.checkbox(&mut settings.is_show_food_ph, "Food ph")
+                        .on_hover_text("Shortcut: F");
+                    ui.checkbox(&mut settings.is_show_ants_path, "Paths")
+                        .on_hover_text("Shortcut: P");
                     ui.checkbox(&mut settings.is_camera_follow, "Camera follow");
-                    if ui.checkbox(&mut settings.is_show_ants, "Ants").clicked() {
+                    if ui
+                        .checkbox(&mut settings.is_show_ants, "Ants")
+                        .on_hover_text("Shortcut: A")
+                        .clicked()
+                    {
                         toggle_ant_visibility(ant_query, settings.is_show_ants);
                     };
                 });
