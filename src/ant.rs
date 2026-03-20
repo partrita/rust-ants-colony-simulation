@@ -1,7 +1,7 @@
 use crate::{
     gui::SimStatistics,
     pheromone::Pheromones,
-    utils::{calc_rotation_angle, get_rand_unit_vec2},
+    utils::get_rand_unit_vec2,
     *,
 };
 use bevy::{
@@ -223,7 +223,7 @@ fn periodic_direction_update(
 fn check_home_food_collisions(
     mut ant_query: Query<
         (
-            &Transform,
+            &mut Transform, // ⚡ Bolt: Mut transform needed for immediate rotation update
             &mut Sprite,
             &mut Velocity,
             &mut CurrentTask,
@@ -234,8 +234,12 @@ fn check_home_food_collisions(
     >,
     asset_server: Res<AssetServer>,
 ) {
-    for (transform, mut sprite, mut velocity, mut ant_task, mut ph_strength, mut image_handle) in
-        ant_query.iter_mut()
+    // ⚡ Bolt: Pre-load handles.
+    let ant_handle = asset_server.load(SPRITE_ANT);
+    let ant_with_food_handle = asset_server.load(SPRITE_ANT_WITH_FOOD);
+
+    // ⚡ Bolt: Using iter_mut() instead of par_iter_mut() for Bevy 0.11 compatibility.
+    for (mut transform, mut sprite, mut velocity, mut ant_task, mut ph_strength, mut image_handle) in ant_query.iter_mut()
     {
         // Home collision
         let dist_to_home =
@@ -248,11 +252,13 @@ fn check_home_food_collisions(
                 AntTask::FindFood => {}
                 AntTask::FindHome => {
                     velocity.0 *= -1.0;
+                    // ⚡ Bolt: Update rotation immediately on velocity change.
+                    transform.rotation = Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
                 }
             }
             ant_task.0 = AntTask::FindFood;
             ph_strength.0 = ANT_INITIAL_PH_STRENGTH;
-            *image_handle = asset_server.load(SPRITE_ANT);
+            *image_handle = ant_handle.clone();
             sprite.color = Color::rgb(1.0, 1.0, 2.5);
         }
 
@@ -265,12 +271,14 @@ fn check_home_food_collisions(
             match ant_task.0 {
                 AntTask::FindFood => {
                     velocity.0 *= -1.0;
+                    // ⚡ Bolt: Update rotation immediately on velocity change.
+                    transform.rotation = Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
                 }
                 AntTask::FindHome => {}
             }
             ant_task.0 = AntTask::FindHome;
             ph_strength.0 = ANT_INITIAL_PH_STRENGTH;
-            *image_handle = asset_server.load(SPRITE_ANT_WITH_FOOD);
+            *image_handle = ant_with_food_handle.clone();
             sprite.color = Color::rgb(1.0, 2.0, 1.0);
         }
     }
@@ -301,19 +309,16 @@ fn update_position(
     mut ant_query: Query<(&mut Transform, &mut Velocity, &mut Acceleration), With<Ant>>,
 ) {
     for (mut transform, mut velocity, mut acceleration) in ant_query.iter_mut() {
-        let old_pos = transform.translation;
-
-        if !acceleration.0.is_nan() {
+        // ⚡ Bolt Optimization: Skip redundant normalization/rotation if acceleration is zero.
+        if acceleration.0 != Vec2::ZERO && !acceleration.0.is_nan() {
             velocity.0 = (velocity.0 + acceleration.0).normalize();
-            let new_translation =
-                transform.translation + vec3(velocity.0.x, velocity.0.y, 0.0) * ANT_SPEED;
-            if !new_translation.is_nan() {
-                transform.translation = new_translation;
-            }
+            acceleration.0 = Vec2::ZERO;
+            transform.rotation = Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
         }
 
-        acceleration.0 = Vec2::ZERO;
-        transform.rotation =
-            Quat::from_rotation_z(calc_rotation_angle(old_pos, transform.translation) + PI / 2.0);
+        let new_translation = transform.translation + vec3(velocity.0.x, velocity.0.y, 0.0) * ANT_SPEED;
+        if !new_translation.is_nan() {
+            transform.translation = new_translation;
+        }
     }
 }
