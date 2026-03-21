@@ -7,13 +7,11 @@ A high-performance, interactive ant colony simulation built with **Rust** and th
 ## 🐜 Key Features
 
 *   **Emergent Intelligence**: Ants use a "Retrace Steps" algorithm. They remember their exploration path and follow it back in reverse after finding food, creating optimized pheromone trails.
-*   **Loop Removal (Path Pruning)**: Ants intelligently prune their remembered paths if they cross their own tracks, ensuring the most efficient route is shared with the colony.
 *   **Dynamic Population**: Start with a small scout group (10 ants). The colony only grows when food is successfully returned to the nest.
 *   **Interactive Environment**:
     *   **God Mode**: Manually place food sources anywhere in the world.
     *   **Dynamic Food**: Food sources have limited units and visually shrink as they are consumed.
     *   **Wind Effect**: Instantly clear pheromone trails to see how the colony adapts to information loss.
-*   **Advanced AI Perception**: Ants have a 180-degree Field of View (FOV) and prioritize fresh pheromones, preventing circular "death loops".
 *   **Performance**: Optimized with k-d trees for spatial pheromone lookups and individualized update timers to ensure smooth, non-synchronized movement of thousands of entities.
 
 ## 🎮 Controls
