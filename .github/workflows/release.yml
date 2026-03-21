@@ -1,4 +1,4 @@
-name: CI & Release
+name: Multi-Platform Release
 
 on:
   push:
@@ -14,15 +14,29 @@ env:
 
 jobs:
   build:
-    name: Build and Test
-    runs-on: ubuntu-latest
+    name: Build - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: ants-linux
+            binary_name: ants
+          - os: windows-latest
+            artifact_name: ants-windows
+            binary_name: ants.exe
+          - os: macos-latest
+            artifact_name: ants-macos
+            binary_name: ants
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      # 1. Bevy 빌드에 필요한 리눅스 시스템 라이브러리 설치
-      - name: Install Bevy dependencies
+      # 1. 리눅스 환경에서 Bevy 빌드 필수 라이브러리 설치
+      - name: Install Bevy dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libx11-dev libasound2-dev libudev-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev
@@ -34,6 +48,8 @@ jobs:
       # 3. 빌드 속도 향상을 위한 Rust 캐시 설정
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.os }}
 
       # 4. 테스트 실행 (Main 브랜치/PR 시 무결성 확인)
       - name: Run tests
@@ -43,27 +59,52 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
-      # 6. 태그 푸시 시에만 실행: 바이너리와 에셋을 함께 압축
-      - name: Archive binary and assets
-        if: startsWith(github.ref, 'refs/tags/v')
+      # 6. 바이너리와 에셋을 함께 패키징 (각 OS별 압축)
+      - name: Package artifacts
+        shell: bash
         run: |
-          # 배포용 패키지 폴더 생성
           mkdir -p release_pkg
-          cp target/release/${{ env.PROJECT_NAME }} release_pkg/
+          # 바이너리 복사
+          cp target/release/${{ matrix.binary_name }} release_pkg/
+          # 에셋 폴더 복사
           cp -r assets release_pkg/
           
-          # 압축 파일 생성 (파일명에 태그 포함)
+          # 압축 (Linux/macOS는 zip, Windows도 zip 사용을 위해 bash shell 활용)
           cd release_pkg
-          zip -r ../${{ env.PROJECT_NAME }}-linux-${{ github.ref_name }}.zip .
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            7z a ../${{ matrix.artifact_name }}.zip .
+          else
+            zip -r ../${{ matrix.artifact_name }}.zip .
+          fi
           cd ..
 
-      # 7. 태그 푸시 시에만 실행: GitHub Release 생성 및 파일 업로드
-      - name: Create Release and Upload Asset
-        if: startsWith(github.ref, 'refs/tags/v')
+      # 7. 워크플로우 내 아티팩트로 임시 보관 (Release job에서 한 번에 업로드하기 위함)
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Check downloaded files
+        run: ls -R
+
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ env.PROJECT_NAME }}-linux-${{ github.ref_name }}.zip
-          body: "Automated release for version ${{ github.ref_name }}"
+          files: |
+            ants-linux/ants-linux.zip
+            ants-windows/ants-windows.zip
+            ants-macos/ants-macos.zip
+          body: "Automated multi-platform release for version ${{ github.ref_name }}"
           draft: false
           prerelease: false
         env:
