@@ -233,13 +233,15 @@ fn check_home_food_collisions(
     >,
     asset_server: Res<AssetServer>,
 ) {
-    // BOLT OPTIMIZATION: Hoist constants out of the ant loop
+    // BOLT OPTIMIZATION: Hoist constants and pre-load asset handles out of the ant loop
     let home_pos = vec3(HOME_LOCATION.0, HOME_LOCATION.1, 0.0);
     let food_pos = vec3(FOOD_LOCATION.0, FOOD_LOCATION.1, 0.0);
     let home_radius_sq = HOME_RADIUS * HOME_RADIUS;
     let food_pickup_radius_sq = FOOD_PICKUP_RADIUS * FOOD_PICKUP_RADIUS;
+    let ant_handle = asset_server.load(SPRITE_ANT);
+    let ant_with_food_handle = asset_server.load(SPRITE_ANT_WITH_FOOD);
 
-    for (transform, mut sprite, mut velocity, mut ant_task, mut ph_strength, mut image_handle) in
+    for (mut transform, mut sprite, mut velocity, mut ant_task, mut ph_strength, mut image_handle) in
         ant_query.iter_mut()
     {
         // Home collision
