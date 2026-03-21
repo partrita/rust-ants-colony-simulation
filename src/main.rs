@@ -4,8 +4,7 @@ use ants::{
     gui::{GuiPlugin, SimSettings},
     pathviz::{PathVizGrid, PathVizPlugin},
     pheromone::{PheromonePlugin, Pheromones},
-    ResetSimulationEvent,
-    *,
+    ResetSimulationEvent, *,
 };
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
@@ -95,7 +94,9 @@ fn fix_window_size(mut windows: Query<&mut Window>) {
         let width = window.physical_width();
         let height = window.physical_height();
         if width > 16384 || height > 16384 {
-            window.resolution.set_physical_resolution(W as u32, H as u32);
+            window
+                .resolution
+                .set_physical_resolution(W as u32, H as u32);
         }
     }
 }

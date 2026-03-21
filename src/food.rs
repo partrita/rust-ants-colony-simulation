@@ -29,42 +29,49 @@ fn manual_food_spawn_system(
                 .cursor_position()
                 .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
             {
-                spawn_food_entity(&mut commands, &asset_server, world_position.x, world_position.y);
+                spawn_food_entity(
+                    &mut commands,
+                    &asset_server,
+                    world_position.x,
+                    world_position.y,
+                );
             }
         }
     }
 }
 
 fn spawn_food_entity(commands: &mut Commands, asset_server: &Res<AssetServer>, x: f32, y: f32) {
-    commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load(SPRITE_FOOD),
-            sprite: Sprite {
-                color: Color::rgb(1.5, 1.5, 1.5),
-                ..default()
+    commands
+        .spawn((
+            SpriteBundle {
+                texture: asset_server.load(SPRITE_FOOD),
+                sprite: Sprite {
+                    color: Color::rgb(1.5, 1.5, 1.5),
+                    ..default()
+                },
+                transform: Transform::from_xyz(x, y, 2.0)
+                    .with_scale(Vec3::splat(FOOD_SPRITE_SCALE)),
+                ..Default::default()
             },
-            transform: Transform::from_xyz(x, y, 2.0)
-                .with_scale(Vec3::splat(FOOD_SPRITE_SCALE)),
-            ..Default::default()
-        },
-        Food {
-            units: FOOD_UNITS_PER_ENTITY,
-        },
-    )).with_children(|parent| {
-        parent.spawn((
-            Text2dBundle {
-                text: Text::from_section(
-                    FOOD_UNITS_PER_ENTITY.to_string(),
-                    TextStyle {
-                        font_size: 20.0,
-                        color: Color::WHITE,
-                        ..default()
-                    },
-                ),
-                transform: Transform::from_xyz(0.0, 20.0, 1.0),
-                ..default()
+            Food {
+                units: FOOD_UNITS_PER_ENTITY,
             },
-            FoodLabel,
-        ));
-    });
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text2dBundle {
+                    text: Text::from_section(
+                        FOOD_UNITS_PER_ENTITY.to_string(),
+                        TextStyle {
+                            font_size: 20.0,
+                            color: Color::WHITE,
+                            ..default()
+                        },
+                    ),
+                    transform: Transform::from_xyz(0.0, 20.0, 1.0),
+                    ..default()
+                },
+                FoodLabel,
+            ));
+        });
 }

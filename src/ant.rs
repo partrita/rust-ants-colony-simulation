@@ -14,37 +14,57 @@ use std::{collections::HashSet, f32::consts::PI, time::Duration};
 
 pub struct AntPlugin;
 
-#[derive(PartialEq, Clone, Copy)]
+/// 개미가 수행하는 현재 작업 상태
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum AntTask {
+    /// 먹이를 찾는 상태
     FindFood,
+    /// 먹이를 집어 올리는 중 (딜레이 포함)
     PickingUp(f32),
+    /// 집으로 돌아가는 상태
     FindHome,
 }
 
+/// 개미의 핵심 데이터를 저장하는 컴포넌트
 #[derive(Component)]
 pub struct Ant {
+    /// 개미가 지나온 경로 히스토리 (집으로 돌아갈 때 사용)
     pub path_history: Vec<Vec2>,
-    pub direction_timer: f32, // 개별 방향 업데이트 타이머
+    /// 개별 개미의 방향 업데이트 주기 제어를 위한 타이머
+    pub direction_timer: f32,
 }
 
+/// 현재 수행 중인 작업을 관리하는 컴포넌트
 #[derive(Component)]
 pub struct CurrentTask(pub AntTask);
+
+/// 개미의 속도 데이터
 #[derive(Component)]
 struct Velocity(Vec2);
+
+/// 개미의 가속도 데이터 (조향 힘이 적용됨)
 #[derive(Component)]
 pub struct Acceleration(pub Vec2);
+
+/// 개미가 뿌리는 페로몬의 강도
 #[derive(Component)]
 struct PhStrength(f32);
+
+/// 먹이 탐색 시간을 제한하기 위한 타이머
 #[derive(Component)]
 struct SearchTimer(f32);
 
+/// 먹이 엔티티가 가진 유닛 수
 #[derive(Component)]
 pub struct Food {
     pub units: u32,
 }
 
+/// 개미가 페로몬을 감지하는 반경 리소스
 #[derive(Resource)]
 pub struct AntScanRadius(f32);
+
+/// 카메라가 추적할 개미의 위치 리소스
 #[derive(Resource)]
 pub struct AntFollowCameraPos(pub Vec2);
 
@@ -61,10 +81,7 @@ impl Plugin for AntPlugin {
                 Update,
                 check_wall_collision.run_if(on_timer(Duration::from_secs_f32(0.1))),
             )
-            .add_systems(
-                Update,
-                check_home_food_collisions,
-            )
+            .add_systems(Update, check_home_food_collisions)
             .add_systems(Update, update_camera_follow_pos)
             .add_systems(
                 Update,
@@ -129,11 +146,22 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn update_pickup_timer(
     time: Res<Time>,
-    mut ant_query: Query<(&mut CurrentTask, &mut PhStrength, &mut Handle<Image>, &mut Sprite, &mut Velocity), With<Ant>>,
+    mut ant_query: Query<
+        (
+            &mut CurrentTask,
+            &mut PhStrength,
+            &mut Handle<Image>,
+            &mut Sprite,
+            &mut Velocity,
+        ),
+        With<Ant>,
+    >,
     asset_server: Res<AssetServer>,
 ) {
     let ant_with_food_handle = asset_server.load(SPRITE_ANT_WITH_FOOD);
-    for (mut task, mut ph_strength, mut image_handle, mut sprite, mut velocity) in ant_query.iter_mut() {
+    for (mut task, mut ph_strength, mut image_handle, mut sprite, mut velocity) in
+        ant_query.iter_mut()
+    {
         if let AntTask::PickingUp(ref mut remaining) = task.0 {
             *remaining -= time.delta_seconds();
             if *remaining <= 0.0 {
@@ -151,10 +179,10 @@ fn record_path_system(mut ant_query: Query<(&mut Ant, &Transform, &CurrentTask)>
     for (mut ant, transform, task) in ant_query.iter_mut() {
         if let AntTask::FindFood = task.0 {
             let pos = transform.translation.truncate();
-            
+
             let mut loop_index = None;
             for (i, &past_pos) in ant.path_history.iter().enumerate() {
-                if past_pos.distance_squared(pos) < 900.0 {
+                if past_pos.distance_squared(pos) < ANT_PATH_LOOP_THRESHOLD_SQ {
                     loop_index = Some(i);
                     break;
                 }
@@ -163,7 +191,10 @@ fn record_path_system(mut ant_query: Query<(&mut Ant, &Transform, &CurrentTask)>
             if let Some(index) = loop_index {
                 ant.path_history.truncate(index + 1);
             } else {
-                if ant.path_history.is_empty() || ant.path_history.last().unwrap().distance_squared(pos) > 400.0 {
+                if ant.path_history.is_empty()
+                    || ant.path_history.last().unwrap().distance_squared(pos)
+                        > ANT_PATH_RECORD_DISTANCE_SQ
+                {
                     ant.path_history.push(pos);
                 }
             }
@@ -172,28 +203,57 @@ fn record_path_system(mut ant_query: Query<(&mut Ant, &Transform, &CurrentTask)>
 }
 
 fn follow_path_home_system(
-    mut ant_query: Query<(&mut Ant, &mut Acceleration, &Transform, &CurrentTask, &Velocity)>,
+    mut ant_query: Query<(
+        &mut Ant,
+        &mut Acceleration,
+        &Transform,
+        &CurrentTask,
+        &Velocity,
+    )>,
 ) {
+    let home_pos = vec2(HOME_LOCATION.0, HOME_LOCATION.1);
     for (mut ant, mut acceleration, transform, task, velocity) in ant_query.iter_mut() {
         if let AntTask::FindHome = task.0 {
             let current_pos = transform.translation.truncate();
-            
-            let target = if let Some(&last_pos) = ant.path_history.last() {
-                if current_pos.distance_squared(last_pos) < 225.0 {
-                    ant.path_history.pop();
-                    if let Some(&next_pos) = ant.path_history.last() {
-                        next_pos
-                    } else {
-                        vec2(HOME_LOCATION.0, HOME_LOCATION.1)
-                    }
-                } else {
-                    last_pos
-                }
-            } else {
-                vec2(HOME_LOCATION.0, HOME_LOCATION.1)
-            };
+            let dist_to_home_sq = current_pos.distance_squared(home_pos);
 
-            let steering_force = get_steering_force(target, current_pos, velocity.0);
+            // 1. 경로 가지치기 (Pruning)
+            // 현재 위치 근처에 이미 방문했던(가야 할) 노드가 있다면 그 사이의 경로는 모두 생략합니다.
+            let mut best_index = None;
+            for (i, &past_pos) in ant.path_history.iter().enumerate().rev() {
+                if current_pos.distance_squared(past_pos) < ANT_PATH_HOME_THRESHOLD_SQ {
+                    best_index = Some(i);
+                    break;
+                }
+            }
+            if let Some(i) = best_index {
+                ant.path_history.truncate(i);
+            }
+
+            // 2. 집 방향성 검증
+            // 현재 내 위치보다 집에서 더 먼 노드들은 의미가 없으므로 제거합니다.
+            while let Some(&last_pos) = ant.path_history.last() {
+                if last_pos.distance_squared(home_pos) > dist_to_home_sq {
+                    ant.path_history.pop();
+                } else {
+                    break;
+                }
+            }
+
+            // 3. 타겟 선정 (경로가 없으면 집으로 직접 향함)
+            let target = ant.path_history.last().copied().unwrap_or(home_pos);
+
+            // 4. 조향 및 정반대 방향 방지
+            let mut steering_force = get_steering_force(target, current_pos, velocity.0);
+
+            // 타겟으로의 방향이 집의 정반대 방향(Dot product < -0.2)이라면 집 방향으로 보정
+            let dir_to_home = (home_pos - current_pos).normalize_or_zero();
+            let dir_to_target = (target - current_pos).normalize_or_zero();
+
+            if dir_to_target.dot(dir_to_home) < -0.2 {
+                steering_force = (dir_to_home * ANT_SPEED - velocity.0) * ANT_STEERING_SMOOTHING;
+            }
+
             acceleration.0 += steering_force * 3.0;
         }
     }
@@ -266,12 +326,21 @@ fn decay_ph_strength(mut ant_query: Query<&mut PhStrength, With<Ant>>) {
 fn get_steering_force(target: Vec2, current: Vec2, velocity: Vec2) -> Vec2 {
     let desired = (target - current).normalize() * ANT_SPEED;
     let steering = desired - velocity;
-    steering * 0.8
+    steering * ANT_STEERING_SMOOTHING
 }
 
 fn periodic_direction_update(
     time: Res<Time>,
-    mut ant_query: Query<(&mut Ant, &mut Acceleration, &Transform, &CurrentTask, &Velocity), Without<Food>>,
+    mut ant_query: Query<
+        (
+            &mut Ant,
+            &mut Acceleration,
+            &Transform,
+            &CurrentTask,
+            &Velocity,
+        ),
+        Without<Food>,
+    >,
     food_query: Query<&Transform, (With<Food>, Without<Ant>)>,
     mut pheromones: ResMut<Pheromones>,
     mut stats: ResMut<SimStatistics>,
@@ -309,7 +378,11 @@ fn periodic_direction_update(
 
         let follow_ph_chance = 1.0 - (sim_settings.scout_ratio / 100.0);
         if target.is_none() && rng.gen_bool(follow_ph_chance as f64) {
-            target = pheromones.to_food.get_steer_target_filtered(&transform.translation, scan_radius.0, velocity.0);
+            target = pheromones.to_food.get_steer_target_filtered(
+                &transform.translation,
+                scan_radius.0,
+                velocity.0,
+            );
         }
 
         if let Some(target_vec) = target {
@@ -336,7 +409,10 @@ fn check_home_food_collisions(
         ),
         (With<Ant>, Without<Food>),
     >,
-    mut food_query: Query<(Entity, &mut Transform, &mut Food, Option<&Children>), (With<Food>, Without<Ant>)>,
+    mut food_query: Query<
+        (Entity, &mut Transform, &mut Food, Option<&Children>),
+        (With<Food>, Without<Ant>),
+    >,
     mut label_query: Query<&mut Text, With<crate::food::FoodLabel>>,
     asset_server: Res<AssetServer>,
     sim_settings: Res<SimSettings>,
@@ -350,8 +426,16 @@ fn check_home_food_collisions(
     let ant_handle = asset_server.load(SPRITE_ANT);
     let mut rng = thread_rng();
 
-    for (mut ant, mut transform, mut sprite, mut velocity, mut acceleration, mut ant_task, mut ph_strength, mut image_handle) in
-        ant_query.iter_mut()
+    for (
+        mut ant,
+        mut transform,
+        mut sprite,
+        mut velocity,
+        mut acceleration,
+        mut ant_task,
+        mut ph_strength,
+        mut image_handle,
+    ) in ant_query.iter_mut()
     {
         let dist_to_home = transform.translation.distance_squared(home_pos);
         if dist_to_home < home_radius_sq {
@@ -359,14 +443,15 @@ fn check_home_food_collisions(
                 if current_ant_count < sim_settings.max_ants as usize {
                     spawn_ant(&mut commands, &asset_server, home_pos.truncate());
                 }
-                
+
                 ant_task.0 = AntTask::FindFood;
                 ph_strength.0 = 0.0;
                 ant.path_history.clear();
                 *image_handle = ant_handle.clone();
                 sprite.color = Color::rgb(1.0, 1.0, 2.5);
                 velocity.0 *= -1.0;
-                transform.rotation = Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
+                transform.rotation =
+                    Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
             }
         }
 
@@ -377,7 +462,9 @@ fn check_home_food_collisions(
                 if consumed_this_frame.contains(&food_entity) {
                     continue;
                 }
-                let dist_sq = transform.translation.distance_squared(food_transform.translation);
+                let dist_sq = transform
+                    .translation
+                    .distance_squared(food_transform.translation);
                 if dist_sq < nearest_food_dist_sq {
                     nearest_food_dist_sq = dist_sq;
                     if dist_sq < food_pickup_radius_sq {
@@ -387,7 +474,9 @@ fn check_home_food_collisions(
             }
 
             if let Some(food_entity) = target_food_entity {
-                if let Ok((_, mut food_transform, mut food, children)) = food_query.get_mut(food_entity) {
+                if let Ok((_, mut food_transform, mut food, children)) =
+                    food_query.get_mut(food_entity)
+                {
                     food.units -= 1;
                     if let Some(children) = children {
                         for &child in children.iter() {
@@ -396,13 +485,14 @@ fn check_home_food_collisions(
                             }
                         }
                     }
-                    let scale_factor = 0.5 + (food.units as f32 / FOOD_UNITS_PER_ENTITY as f32) * 0.5;
+                    let scale_factor =
+                        0.5 + (food.units as f32 / FOOD_UNITS_PER_ENTITY as f32) * 0.5;
                     food_transform.scale = Vec3::splat(FOOD_SPRITE_SCALE * scale_factor);
                     if food.units == 0 {
                         consumed_this_frame.insert(food_entity);
                         commands.entity(food_entity).despawn_recursive();
                     }
-                    
+
                     let delay = rng.gen_range(0.1..=2.0);
                     ant_task.0 = AntTask::PickingUp(delay);
                     velocity.0 = Vec2::ZERO;
@@ -414,26 +504,47 @@ fn check_home_food_collisions(
 }
 
 fn check_wall_collision(
-    mut ant_query: Query<(&Transform, &Velocity, &mut Acceleration, &mut CurrentTask, &mut PhStrength), With<Ant>>,
+    mut ant_query: Query<
+        (
+            &Transform,
+            &mut Velocity,
+            &mut Acceleration,
+            &mut CurrentTask,
+            &mut PhStrength,
+        ),
+        With<Ant>,
+    >,
 ) {
     let width_half = W / 2.0;
     let height_half = H / 2.0;
-    let margin = 100.0;
+    let margin = ANT_WALL_MARGIN;
     let home_pos = vec2(HOME_LOCATION.0, HOME_LOCATION.1);
     let mut rng = thread_rng();
 
-    for (transform, velocity, mut acceleration, mut task, mut ph_strength) in ant_query.iter_mut() {
+    for (transform, mut velocity, mut acceleration, mut task, mut ph_strength) in ant_query.iter_mut() {
         let pos = transform.translation.truncate();
+        
+        // 화면 경계에 가까워지면 중앙으로 조향
         if pos.x.abs() > width_half - margin || pos.y.abs() > height_half - margin {
             let mut target = vec2(rng.gen_range(-200.0..200.0), rng.gen_range(-200.0..200.0));
             if let AntTask::FindHome = task.0 {
                 target = home_pos;
             }
             let desired = (target - pos).normalize();
-            let steering = (desired - velocity.0) * 1.5;
+            let steering = (desired - velocity.0) * ANT_WALL_STEER_FORCE;
             acceleration.0 += steering;
-            if let AntTask::FindFood = task.0 {
-                if pos.x.abs() > width_half - 20.0 || pos.y.abs() > height_half - 20.0 {
+
+            // 실제 화면 끝(20px 남음)에 도달하면 속도 즉시 반전 및 강제 회전
+            if pos.x.abs() > width_half - 20.0 {
+                velocity.0.x *= -1.0;
+                if let AntTask::FindFood = task.0 {
+                    task.0 = AntTask::FindHome;
+                    ph_strength.0 = 0.0;
+                }
+            }
+            if pos.y.abs() > height_half - 20.0 {
+                velocity.0.y *= -1.0;
+                if let AntTask::FindFood = task.0 {
                     task.0 = AntTask::FindHome;
                     ph_strength.0 = 0.0;
                 }
@@ -445,6 +556,9 @@ fn check_wall_collision(
 fn update_position(
     mut ant_query: Query<(&mut Transform, &mut Velocity, &mut Acceleration), With<Ant>>,
 ) {
+    let width_half = W / 2.0;
+    let height_half = H / 2.0;
+
     for (mut transform, mut velocity, mut acceleration) in ant_query.iter_mut() {
         if acceleration.0 != Vec2::ZERO && !acceleration.0.is_nan() {
             velocity.0 = (velocity.0 + acceleration.0).normalize();
@@ -452,9 +566,17 @@ fn update_position(
             transform.rotation = Quat::from_rotation_z(velocity.0.y.atan2(velocity.0.x) + PI / 2.0);
         }
 
-        if velocity.0 == Vec2::ZERO { continue; }
+        if velocity.0 == Vec2::ZERO {
+            continue;
+        }
 
-        let new_translation = transform.translation + vec3(velocity.0.x, velocity.0.y, 0.0) * ANT_SPEED;
+        let mut new_translation =
+            transform.translation + vec3(velocity.0.x, velocity.0.y, 0.0) * ANT_SPEED;
+        
+        // 하드 클램핑: 화면 밖으로 한 픽셀도 나가지 못하게 고정
+        new_translation.x = new_translation.x.clamp(-width_half + 5.0, width_half - 5.0);
+        new_translation.y = new_translation.y.clamp(-height_half + 5.0, height_half - 5.0);
+
         if !new_translation.is_nan() {
             transform.translation = new_translation;
         }

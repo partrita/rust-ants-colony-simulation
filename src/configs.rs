@@ -17,9 +17,15 @@ pub const ANT_PH_DROP_INTERVAL: f32 = 0.5; // 더 자주 뿌림 (0.7 -> 0.5)
 pub const INITIAL_ANT_PH_SCAN_RADIUS: f32 = 30.0; // 15 -> 30 상향
 pub const ANT_PH_SCAN_RADIUS_INCREMENT: f32 = 0.1;
 pub const ANT_PH_SCAN_RADIUS_SCALE: f32 = 1.8;
-pub const ANT_STEERING_FORCE_FACTOR: f32 = 2.0; 
+pub const ANT_STEERING_FORCE_FACTOR: f32 = 2.0;
 pub const ANT_TARGET_AUTO_PULL_RADIUS: f32 = 100.0;
-pub const ANT_MAX_SEARCH_TIME: f32 = 30.0; 
+pub const ANT_MAX_SEARCH_TIME: f32 = 30.0;
+pub const ANT_PATH_RECORD_DISTANCE_SQ: f32 = 400.0;
+pub const ANT_PATH_LOOP_THRESHOLD_SQ: f32 = 900.0;
+pub const ANT_PATH_HOME_THRESHOLD_SQ: f32 = 225.0;
+pub const ANT_STEERING_SMOOTHING: f32 = 0.8;
+pub const ANT_WALL_MARGIN: f32 = 100.0;
+pub const ANT_WALL_STEER_FORCE: f32 = 1.5;
 
 // Ant Colony
 pub const HOME_LOCATION: (f32, f32) = (759.0, -350.0);

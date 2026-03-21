@@ -79,18 +79,24 @@ impl WorldGrid {
     }
 
     // 개선된 조향 타겟 계산: 전방 시야 필터링 및 근거리 무시
-    pub fn get_steer_target_filtered(&mut self, pos: &Vec3, radius: f32, velocity: Vec2) -> Option<Vec2> {
+    pub fn get_steer_target_filtered(
+        &mut self,
+        pos: &Vec3,
+        radius: f32,
+        velocity: Vec2,
+    ) -> Option<Vec2> {
         let current_pos = pos.truncate();
         let forward = velocity.normalize_or_zero();
 
         match self.get_ph_in_range(pos, radius) {
             Some(v) => {
-                let filtered: Vec<(i32, i32, f32)> = v.into_iter()
+                let filtered: Vec<(i32, i32, f32)> = v
+                    .into_iter()
                     .filter(|&(x, y, _)| {
                         let target_pos = vec2(x as f32, y as f32);
                         let to_target = target_pos - current_pos;
                         let dist_sq = to_target.length_squared();
-                        
+
                         // 너무 가깝거나(발밑) 뒤쪽에 있는 페로몬은 무시
                         dist_sq > 400.0 && forward.dot(to_target.normalize_or_zero()) > -0.2
                     })

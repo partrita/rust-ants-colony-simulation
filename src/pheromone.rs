@@ -52,7 +52,9 @@ impl Plugin for PheromonePlugin {
 }
 
 fn pheromone_decay(mut pheromones: ResMut<Pheromones>, settings: Res<SimSettings>) {
-    pheromones.to_food.decay_signals_custom(settings.ph_decay_rate);
+    pheromones
+        .to_food
+        .decay_signals_custom(settings.ph_decay_rate);
 }
 
 fn update_sim_stats(pheromones: Res<Pheromones>, mut stats: ResMut<SimStatistics>) {
@@ -125,9 +127,6 @@ impl Pheromones {
     }
 
     pub fn clear_cache(&mut self) -> (u32, u32) {
-        (
-            self.to_food.clear_steer_cache(),
-            0
-        )
+        (self.to_food.clear_steer_cache(), 0)
     }
 }

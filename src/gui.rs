@@ -132,10 +132,13 @@ fn settings_dialog(
                     ui.label("Max Ants");
                     ui.add(egui::Slider::new(&mut settings.max_ants, 1..=5000));
                     ui.label("Scout Ratio (%)");
-                    ui.add(egui::Slider::new(&mut settings.scout_ratio, 0.0001..=1.0).logarithmic(true));
+                    ui.add(egui::Slider::new(&mut settings.scout_ratio, 0.0..=10.0));
                     ui.label("Ph Decay Rate");
-                    ui.add(egui::Slider::new(&mut settings.ph_decay_rate, 0.01..=3.0).logarithmic(true));
-                    
+                    ui.add(
+                        egui::Slider::new(&mut settings.ph_decay_rate, 0.01..=3.0)
+                            .logarithmic(true),
+                    );
+
                     ui.separator();
                     if ui.button("Reset Pheromones (Wind)").clicked() {
                         pheromones.reset();
@@ -171,7 +174,7 @@ impl Default for SimSettings {
             is_show_menu: false,
             is_show_ants_path: true,
             max_ants: 1000,
-            scout_ratio: 0.001,
+            scout_ratio: 1.0,
             ph_decay_rate: PH_DECAY_RATE,
         }
     }

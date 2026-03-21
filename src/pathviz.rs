@@ -72,7 +72,9 @@ fn update_grid_values(
 
         // 집으로 돌아가는 개미(먹이를 찾은 개미)의 경로만 더 진하게 표시
         if let AntTask::FindHome = current_task.0 {
-            viz_grid.dg_path.add_value(&key, VIZ_COLOR_STRENGTH * 2.0, 5.0);
+            viz_grid
+                .dg_path
+                .add_value(&key, VIZ_COLOR_STRENGTH * 2.0, 5.0);
         } else {
             viz_grid.dg_path.add_value(&key, VIZ_COLOR_STRENGTH, 5.0);
         }
