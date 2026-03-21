@@ -160,6 +160,14 @@ fn periodic_direction_update(
 ) {
     (stats.food_cache_size, stats.home_cache_size) = pheromones.clear_cache();
 
+    // BOLT OPTIMIZATION: Hoist constants out of the ant loop
+    let home_pos = vec3(HOME_LOCATION.0, HOME_LOCATION.1, 0.0);
+    let food_pos = vec3(FOOD_LOCATION.0, FOOD_LOCATION.1, 0.0);
+    let pull_radius_sq = ANT_TARGET_AUTO_PULL_RADIUS * ANT_TARGET_AUTO_PULL_RADIUS;
+    let home_target = Some(vec2(HOME_LOCATION.0, HOME_LOCATION.1));
+    let food_target = Some(vec2(FOOD_LOCATION.0, FOOD_LOCATION.1));
+    let mut rng = rand::thread_rng();
+
     for (mut acceleration, transform, current_task, velocity) in ant_query.iter_mut() {
         let current_pos = transform.translation;
         let mut target = None;
@@ -167,23 +175,15 @@ fn periodic_direction_update(
         // If ant is close to food/home, pull it towards itself
         match current_task.0 {
             AntTask::FindFood => {
-                let dist_to_food = transform.translation.distance_squared(vec3(
-                    FOOD_LOCATION.0,
-                    FOOD_LOCATION.1,
-                    0.0,
-                ));
-                if dist_to_food <= ANT_TARGET_AUTO_PULL_RADIUS * ANT_TARGET_AUTO_PULL_RADIUS {
-                    target = Some(vec2(FOOD_LOCATION.0, FOOD_LOCATION.1));
+                let dist_to_food = transform.translation.distance_squared(food_pos);
+                if dist_to_food <= pull_radius_sq {
+                    target = food_target;
                 }
             }
             AntTask::FindHome => {
-                let dist_to_home = transform.translation.distance_squared(vec3(
-                    HOME_LOCATION.0,
-                    HOME_LOCATION.1,
-                    0.0,
-                ));
-                if dist_to_home <= ANT_TARGET_AUTO_PULL_RADIUS * ANT_TARGET_AUTO_PULL_RADIUS {
-                    target = Some(vec2(HOME_LOCATION.0, HOME_LOCATION.1));
+                let dist_to_home = transform.translation.distance_squared(home_pos);
+                if dist_to_home <= pull_radius_sq {
+                    target = home_target;
                 }
             }
         };
@@ -215,7 +215,6 @@ fn periodic_direction_update(
             velocity.0,
         );
 
-        let mut rng = rand::thread_rng();
         acceleration.0 += steering_force * rng.gen_range(0.4..=ANT_STEERING_FORCE_FACTOR);
     }
 }
@@ -234,15 +233,18 @@ fn check_home_food_collisions(
     >,
     asset_server: Res<AssetServer>,
 ) {
+    // BOLT OPTIMIZATION: Hoist constants out of the ant loop
+    let home_pos = vec3(HOME_LOCATION.0, HOME_LOCATION.1, 0.0);
+    let food_pos = vec3(FOOD_LOCATION.0, FOOD_LOCATION.1, 0.0);
+    let home_radius_sq = HOME_RADIUS * HOME_RADIUS;
+    let food_pickup_radius_sq = FOOD_PICKUP_RADIUS * FOOD_PICKUP_RADIUS;
+
     for (transform, mut sprite, mut velocity, mut ant_task, mut ph_strength, mut image_handle) in
         ant_query.iter_mut()
     {
         // Home collision
-        let dist_to_home =
-            transform
-                .translation
-                .distance_squared(vec3(HOME_LOCATION.0, HOME_LOCATION.1, 0.0));
-        if dist_to_home < HOME_RADIUS * HOME_RADIUS {
+        let dist_to_home = transform.translation.distance_squared(home_pos);
+        if dist_to_home < home_radius_sq {
             // rebound only the ants with food
             match ant_task.0 {
                 AntTask::FindFood => {}
@@ -257,11 +259,8 @@ fn check_home_food_collisions(
         }
 
         // Food Collision
-        let dist_to_food =
-            transform
-                .translation
-                .distance_squared(vec3(FOOD_LOCATION.0, FOOD_LOCATION.1, 0.0));
-        if dist_to_food < FOOD_PICKUP_RADIUS * FOOD_PICKUP_RADIUS {
+        let dist_to_food = transform.translation.distance_squared(food_pos);
+        if dist_to_food < food_pickup_radius_sq {
             match ant_task.0 {
                 AntTask::FindFood => {
                     velocity.0 *= -1.0;
@@ -279,17 +278,19 @@ fn check_home_food_collisions(
 fn check_wall_collision(
     mut ant_query: Query<(&Transform, &Velocity, &mut Acceleration), With<Ant>>,
 ) {
+    // BOLT OPTIMIZATION: Hoist constants and thread_rng out of the ant loop
+    let border = 20.0;
+    let top_left = (-W / 2.0, H / 2.0);
+    let bottom_right = (W / 2.0, -H / 2.0);
+    let mut rng = thread_rng();
+
     for (transform, velocity, mut acceleration) in ant_query.iter_mut() {
         // wall rebound
-        let border = 20.0;
-        let top_left = (-W / 2.0, H / 2.0);
-        let bottom_right = (W / 2.0, -H / 2.0);
         let x_bound = transform.translation.x < top_left.0 + border
             || transform.translation.x >= bottom_right.0 - border;
         let y_bound = transform.translation.y >= top_left.1 - border
             || transform.translation.y < bottom_right.1 + border;
         if x_bound || y_bound {
-            let mut rng = thread_rng();
             let target = vec2(rng.gen_range(-200.0..200.0), rng.gen_range(-200.0..200.0));
             acceleration.0 +=
                 get_steering_force(target, transform.translation.truncate(), velocity.0);
