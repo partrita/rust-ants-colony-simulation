@@ -25,7 +25,17 @@ cd rust-ants-colony-simulation
 ```bash
 cargo run --release
 ```
+> **Note:** Running in release mode is highly recommended to maintain performance with 5,000 ants.
+
+### Keyboard Shortcuts
+- `Tab`: Toggle Settings/Stats Menu
+- `H`: Toggle Home Pheromones visibility
+- `F`: Toggle Food Pheromones visibility
+- `P`: Toggle Ant Paths visualization
+- `A`: Toggle Ant visibility
+- `Esc`: Close the simulation
 
 ## Configurations
 - The project config file is located at `src/configs.rs`
-- If all ants aren't forming a single trail even after a long time, try increasing `ANT_INITIAL_PH_STRENGTH` in the configs to a greater value (exmaple: `40.0`)
+- If all ants aren't forming a single trail even after a long time, try increasing `ANT_INITIAL_PH_STRENGTH` in the configs to a greater value (example: `40.0`)
+- You can also adjust `NUM_ANTS`, `ANT_SPEED`, and other simulation parameters in the same file.

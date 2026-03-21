@@ -1,0 +1,70 @@
+name: CI & Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*' # v1.0.0 등 태그 푸시 시 트리거
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  PROJECT_NAME: ants 
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      # 1. Bevy 빌드에 필요한 리눅스 시스템 라이브러리 설치
+      - name: Install Bevy dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libx11-dev libasound2-dev libudev-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev
+
+      # 2. Rust 툴체인 설정
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 3. 빌드 속도 향상을 위한 Rust 캐시 설정
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      # 4. 테스트 실행 (Main 브랜치/PR 시 무결성 확인)
+      - name: Run tests
+        run: cargo test --verbose
+
+      # 5. 릴리스용 바이너리 빌드
+      - name: Build release binary
+        run: cargo build --release
+
+      # 6. 태그 푸시 시에만 실행: 바이너리와 에셋을 함께 압축
+      - name: Archive binary and assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # 배포용 패키지 폴더 생성
+          mkdir -p release_pkg
+          cp target/release/${{ env.PROJECT_NAME }} release_pkg/
+          cp -r assets release_pkg/
+          
+          # 압축 파일 생성 (파일명에 태그 포함)
+          cd release_pkg
+          zip -r ../${{ env.PROJECT_NAME }}-linux-${{ github.ref_name }}.zip .
+          cd ..
+
+      # 7. 태그 푸시 시에만 실행: GitHub Release 생성 및 파일 업로드
+      - name: Create Release and Upload Asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.PROJECT_NAME }}-linux-${{ github.ref_name }}.zip
+          body: "Automated release for version ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

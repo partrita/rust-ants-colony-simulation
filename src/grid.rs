@@ -178,12 +178,17 @@ pub fn add_map_to_grid_img(
     use_grid_pos: bool,
 ) {
     let w = W as usize / PH_UNIT_GRID_SIZE;
+    let h = H as usize / PH_UNIT_GRID_SIZE;
     for (k, v) in map.iter() {
         let (mut x, mut y) = (k.0, k.1);
 
         if use_grid_pos {
             (x, y) = (x * PH_UNIT_GRID_SIZE as i32, y * PH_UNIT_GRID_SIZE as i32);
             (x, y) = window_to_grid(x, y);
+        }
+
+        if x < 0 || x >= w as i32 || y < 0 || y >= h as i32 {
+            continue;
         }
 
         let idx = y * w as i32 + x;
