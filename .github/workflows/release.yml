@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 1. 리눅스 환경에서 Bevy 빌드 필수 라이브러리 설치
       - name: Install Bevy dependencies (Linux)
@@ -55,7 +55,7 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-      # 5. 릴리스용 바이너리 빌드
+      # 5. 릴릴리스용 바이너리 빌드
       - name: Build release binary
         run: cargo build --release
 
@@ -78,9 +78,9 @@ jobs:
           fi
           cd ..
 
-      # 7. 워크플로우 내 아티팩트로 임시 보관 (Release job에서 한 번에 업로드하기 위함)
+      # 7. 워크플로우 내 아티팩트로 임시 보관 (v4로 업그레이드)
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}.zip
@@ -92,18 +92,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
       - name: Check downloaded files
-        run: ls -R
+        run: ls -R artifacts
 
       - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            ants-linux/ants-linux.zip
-            ants-windows/ants-windows.zip
-            ants-macos/ants-macos.zip
+            artifacts/ants-linux/ants-linux.zip
+            artifacts/ants-windows/ants-windows.zip
+            artifacts/ants-macos/ants-macos.zip
           body: "Automated multi-platform release for version ${{ github.ref_name }}"
           draft: false
           prerelease: false
