@@ -2,7 +2,7 @@ use crate::{
     utils::{calc_weighted_midpoint, window_to_grid},
     *,
 };
-use bevy::prelude::*;
+use bevy::{math::vec2, prelude::*};
 use kd_tree::KdTree;
 use std::{cmp, collections::HashMap};
 
@@ -31,8 +31,6 @@ impl WorldGrid {
 
     pub fn emit_signal(&mut self, key: &(i32, i32), value: f32) {
         let key = self.get_ph_key(key.0, key.1);
-        // TODO: this 0 check prevents from having a large pheromone to be formed at the center
-        // Still to debug why this happens
         if key.0 == 0 && key.1 == 0 {
             return;
         }
@@ -68,7 +66,6 @@ impl WorldGrid {
 
         match self.get_ph_in_range(pos, radius) {
             Some(v) => {
-                // No nearby pheromone signals
                 if v.is_empty() {
                     return None;
                 }
@@ -76,6 +73,34 @@ impl WorldGrid {
                 let steer_target = calc_weighted_midpoint(&v);
                 self.steer_cache.insert(grid_pos, steer_target);
                 Some(steer_target)
+            }
+            None => None,
+        }
+    }
+
+    // 개선된 조향 타겟 계산: 전방 시야 필터링 및 근거리 무시
+    pub fn get_steer_target_filtered(&mut self, pos: &Vec3, radius: f32, velocity: Vec2) -> Option<Vec2> {
+        let current_pos = pos.truncate();
+        let forward = velocity.normalize_or_zero();
+
+        match self.get_ph_in_range(pos, radius) {
+            Some(v) => {
+                let filtered: Vec<(i32, i32, f32)> = v.into_iter()
+                    .filter(|&(x, y, _)| {
+                        let target_pos = vec2(x as f32, y as f32);
+                        let to_target = target_pos - current_pos;
+                        let dist_sq = to_target.length_squared();
+                        
+                        // 너무 가깝거나(발밑) 뒤쪽에 있는 페로몬은 무시
+                        dist_sq > 400.0 && forward.dot(to_target.normalize_or_zero()) > -0.2
+                    })
+                    .collect();
+
+                if filtered.is_empty() {
+                    return None;
+                }
+
+                Some(calc_weighted_midpoint(&filtered))
             }
             None => None,
         }
@@ -120,6 +145,16 @@ impl WorldGrid {
         self.signals.decay_values(PH_DECAY_RATE);
     }
 
+    pub fn decay_signals_custom(&mut self, decay_rate: f32) {
+        self.signals.decay_values(decay_rate);
+    }
+
+    pub fn clear_all_signals(&mut self) {
+        self.signals.clear_values();
+        self.steer_cache.clear();
+        self.tree = None;
+    }
+
     pub fn drop_zero_signals(&mut self) {
         self.signals.drop_zero_values();
     }
@@ -160,6 +195,10 @@ impl DecayGrid {
         for (_, v) in self.values.iter_mut() {
             *v = f32::max(*v - decay_rate, 0.0);
         }
+    }
+
+    pub fn clear_values(&mut self) {
+        self.values.clear();
     }
 
     pub fn drop_zero_values(&mut self) {

@@ -16,8 +16,7 @@ pub struct PathVizPlugin;
 
 #[derive(Resource)]
 pub struct PathVizGrid {
-    pub dg_home: DecayGrid,
-    pub dg_food: DecayGrid,
+    pub dg_path: DecayGrid,
 }
 
 #[derive(Component)]
@@ -71,20 +70,16 @@ fn update_grid_values(
         let y = transform.translation.y as i32;
         let key = window_to_grid(x, y);
 
-        match current_task.0 {
-            AntTask::FindFood => {
-                viz_grid.dg_food.add_value(&key, VIZ_COLOR_STRENGTH, 5.0);
-            }
-            AntTask::FindHome => {
-                viz_grid.dg_home.add_value(&key, VIZ_COLOR_STRENGTH, 5.0);
-            }
+        // 집으로 돌아가는 개미(먹이를 찾은 개미)의 경로만 더 진하게 표시
+        if let AntTask::FindHome = current_task.0 {
+            viz_grid.dg_path.add_value(&key, VIZ_COLOR_STRENGTH * 2.0, 5.0);
+        } else {
+            viz_grid.dg_path.add_value(&key, VIZ_COLOR_STRENGTH, 5.0);
         }
     }
 
-    viz_grid.dg_food.decay_values(VIZ_DECAY_RATE);
-    viz_grid.dg_food.drop_zero_values();
-    viz_grid.dg_home.decay_values(VIZ_DECAY_RATE);
-    viz_grid.dg_home.drop_zero_values();
+    viz_grid.dg_path.decay_values(VIZ_DECAY_RATE);
+    viz_grid.dg_path.drop_zero_values();
 }
 
 fn update_path_viz_image(
@@ -100,14 +95,8 @@ fn update_path_viz_image(
 
     let mut bytes = vec![0; w * h * 4];
     add_map_to_grid_img(
-        viz_grid.dg_food.get_values(),
-        &VIZ_COLOR_TO_FOOD,
-        &mut bytes,
-        false,
-    );
-    add_map_to_grid_img(
-        viz_grid.dg_home.get_values(),
-        &VIZ_COLOR_TO_HOME,
+        viz_grid.dg_path.get_values(),
+        &VIZ_COLOR_TO_FOOD, // 한 가지 색상으로 통합
         &mut bytes,
         false,
     );
@@ -128,8 +117,7 @@ fn update_path_viz_image(
 impl PathVizGrid {
     fn new() -> Self {
         Self {
-            dg_home: DecayGrid::new(HashMap::new(), VIZ_MAX_COLOR_STRENGTH),
-            dg_food: DecayGrid::new(HashMap::new(), VIZ_MAX_COLOR_STRENGTH),
+            dg_path: DecayGrid::new(HashMap::new(), VIZ_MAX_COLOR_STRENGTH),
         }
     }
 }

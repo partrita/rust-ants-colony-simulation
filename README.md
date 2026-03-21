@@ -1,41 +1,55 @@
 # Ant Colony Simulation
-This is an ant colony simulation, it internally uses kdtree and query caching, it's able to handle about 5k ants on the cpu.
 
+A high-performance, interactive ant colony simulation built with **Rust** and the **Bevy** game engine. This project simulates complex emergent behaviors of ants including foraging, dynamic trail formation, and colony growth.
 
-Built with [Rust](https://www.rust-lang.org/) and [Bevy](https://bevyengine.org/) game engine
+![Simulation Screenshot](screenshot.png)
 
-![screenshot](/screenshot.png)
+## 🐜 Key Features
 
-# Demo
-Here's the entire timelapse of the AI learning to drive
+*   **Emergent Intelligence**: Ants use a "Retrace Steps" algorithm. They remember their exploration path and follow it back in reverse after finding food, creating optimized pheromone trails.
+*   **Loop Removal (Path Pruning)**: Ants intelligently prune their remembered paths if they cross their own tracks, ensuring the most efficient route is shared with the colony.
+*   **Dynamic Population**: Start with a small scout group (10 ants). The colony only grows when food is successfully returned to the nest.
+*   **Interactive Environment**:
+    *   **God Mode**: Manually place food sources anywhere in the world.
+    *   **Dynamic Food**: Food sources have limited units and visually shrink as they are consumed.
+    *   **Wind Effect**: Instantly clear pheromone trails to see how the colony adapts to information loss.
+*   **Advanced AI Perception**: Ants have a 180-degree Field of View (FOV) and prioritize fresh pheromones, preventing circular "death loops".
+*   **Performance**: Optimized with k-d trees for spatial pheromone lookups and individualized update timers to ensure smooth, non-synchronized movement of thousands of entities.
 
-[![youtube](https://img.youtube.com/vi/98pUSZAM_7M/0.jpg)](https://youtu.be/98pUSZAM_7M)
+## 🎮 Controls
 
-# Timelapses with Approach 1
-[![youtube](https://img.youtube.com/vi/5xdfTJBMnwI/0.jpg)](https://youtu.be/5xdfTJBMnwI)
+| Action | Control |
+| :--- | :--- |
+| **Toggle Menu** | `Tab` |
+| **Place Food** | `Shift + Left Click` |
+| **Pan Camera** | `Left Mouse Drag` |
+| **Zoom In/Out** | `Mouse Wheel` |
+| **Toggle Pheromones** | `F` (via Menu) |
+| **Toggle Paths** | `P` (via Menu) |
+| **Close App** | `Esc` |
 
+## 🛠 Simulation Settings (Tab Menu)
 
-## Usage
-- Clone the repo
-```bash
-git clone git@github.com:bones-ai/rust-ants-colony-simulation.git
-cd rust-ants-colony-simulation
-```
-- Run the simulation
+*   **Max Ants**: Set the population ceiling for your colony.
+*   **Scout Ratio (%)**: Adjust how many ants ignore pheromones to explore new territories (Logarithmic scale for precision).
+*   **Ph Decay Rate**: Control how fast pheromone trails evaporate.
+*   **Reset Pheromones (Wind)**: Wipe all existing trails.
+*   **Full Reset Simulation**: Clear everything and start over with 10 ants.
+
+## 🚀 Getting Started
+
+### Prerequisites
+*   [Rust](https://www.rust-lang.org/tools/install) (latest stable version)
+
+### Running the Simulation
+It is **highly recommended** to run in release mode for maximum performance:
+
 ```bash
 cargo run --release
 ```
-> **Note:** Running in release mode is highly recommended to maintain performance with 5,000 ants.
 
-### Keyboard Shortcuts
-- `Tab`: Toggle Settings/Stats Menu
-- `H`: Toggle Home Pheromones visibility
-- `F`: Toggle Food Pheromones visibility
-- `P`: Toggle Ant Paths visualization
-- `A`: Toggle Ant visibility
-- `Esc`: Close the simulation
-
-## Configurations
-- The project config file is located at `src/configs.rs`
-- If all ants aren't forming a single trail even after a long time, try increasing `ANT_INITIAL_PH_STRENGTH` in the configs to a greater value (example: `40.0`)
-- You can also adjust `NUM_ANTS`, `ANT_SPEED`, and other simulation parameters in the same file.
+## 🏗 Technical Stack
+*   **Engine**: Bevy 0.11 (ECS Architecture)
+*   **UI**: `bevy_egui`
+*   **Spatial Indexing**: `kd-tree` for efficient neighbor search.
+*   **Camera**: `bevy_pancam` for interactive navigation.

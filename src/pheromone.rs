@@ -14,7 +14,6 @@ pub struct PheromonePlugin;
 
 #[derive(Resource)]
 pub struct Pheromones {
-    pub to_home: WorldGrid,
     pub to_food: WorldGrid,
 }
 
@@ -52,23 +51,20 @@ impl Plugin for PheromonePlugin {
     }
 }
 
-fn pheromone_decay(mut pheromones: ResMut<Pheromones>) {
-    pheromones.to_food.decay_signals();
-    pheromones.to_home.decay_signals();
+fn pheromone_decay(mut pheromones: ResMut<Pheromones>, settings: Res<SimSettings>) {
+    pheromones.to_food.decay_signals_custom(settings.ph_decay_rate);
 }
 
 fn update_sim_stats(pheromones: Res<Pheromones>, mut stats: ResMut<SimStatistics>) {
-    stats.ph_home_size = pheromones.to_home.get_signals_size() as u32;
     stats.ph_food_size = pheromones.to_food.get_signals_size() as u32;
 }
 
 fn update_kd_tree(mut pheromones: ResMut<Pheromones>) {
-    pheromones.update_tree();
+    pheromones.to_food.update_tree();
 }
 
 fn clean_zero_signals(mut pheromones: ResMut<Pheromones>) {
     pheromones.to_food.drop_zero_signals();
-    pheromones.to_home.drop_zero_signals();
 }
 
 fn pheromone_image_update(
@@ -84,14 +80,6 @@ fn pheromone_image_update(
     );
     let mut bytes = vec![0; w * h * 4];
 
-    if sim_settings.is_show_home_ph {
-        add_map_to_grid_img(
-            pheromone.to_home.get_signals(),
-            &pheromone.to_home.color,
-            &mut bytes,
-            true,
-        );
-    }
     if sim_settings.is_show_food_ph {
         add_map_to_grid_img(
             pheromone.to_food.get_signals(),
@@ -127,28 +115,19 @@ fn setup(mut commands: Commands) {
 
 impl Pheromones {
     fn new() -> Self {
-        let mut to_food_map = HashMap::new();
-        let mut to_home_map = HashMap::new();
-
-        // Food and Home have high pheromone strength
-        to_food_map.insert((FOOD_LOCATION.0 as i32, FOOD_LOCATION.1 as i32), 100000.0);
-        to_home_map.insert((HOME_LOCATION.0 as i32, HOME_LOCATION.1 as i32), 100000.0);
-
         Self {
-            to_food: WorldGrid::new(PH_COLOR_TO_FOOD, to_food_map),
-            to_home: WorldGrid::new(PH_COLOR_TO_HOME, to_home_map),
+            to_food: WorldGrid::new(PH_COLOR_TO_FOOD, HashMap::new()),
         }
     }
 
-    fn update_tree(&mut self) {
-        self.to_food.update_tree();
-        self.to_home.update_tree();
+    pub fn reset(&mut self) {
+        self.to_food.clear_all_signals();
     }
 
     pub fn clear_cache(&mut self) -> (u32, u32) {
         (
             self.to_food.clear_steer_cache(),
-            self.to_home.clear_steer_cache(),
+            0
         )
     }
 }
