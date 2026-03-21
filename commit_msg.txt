@@ -1,0 +1,6 @@
+⚡ Bolt: Optimize vec3 creations in hot loops
+
+💡 What: Hoisted loop-invariant `vec3` constructions, constants, and `thread_rng()` instantiations out of `for` loops in `src/ant.rs`.
+🎯 Why: `periodic_direction_update`, `check_home_food_collisions`, and `check_wall_collision` run inside tight iterative loops (called every 0.1-0.5s for `NUM_ANTS=5000` elements). By declaring them before the loop, we avoid redundantly creating struct variants thousands of times.
+📊 Impact: Expected to reduce memory overhead and slight CPU usage in the inner game loop update systems.
+🔬 Measurement: Run `cargo run --release` and check cpu usage.

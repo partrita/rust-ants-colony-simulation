@@ -128,7 +128,6 @@ fn quickselect(points: &mut [(i32, i32, f32)], low: usize, high: usize, n: usize
         let pivot_index = partition(points, low, high);
 
         if pivot_index == n - 1 {
-            return;
         } else if pivot_index > n - 1 {
             quickselect(points, low, pivot_index - 1, n);
         } else {
