@@ -521,9 +521,11 @@ fn check_wall_collision(
     let home_pos = vec2(HOME_LOCATION.0, HOME_LOCATION.1);
     let mut rng = thread_rng();
 
-    for (transform, mut velocity, mut acceleration, mut task, mut ph_strength) in ant_query.iter_mut() {
+    for (transform, mut velocity, mut acceleration, mut task, mut ph_strength) in
+        ant_query.iter_mut()
+    {
         let pos = transform.translation.truncate();
-        
+
         // 화면 경계에 가까워지면 중앙으로 조향
         if pos.x.abs() > width_half - margin || pos.y.abs() > height_half - margin {
             let mut target = vec2(rng.gen_range(-200.0..200.0), rng.gen_range(-200.0..200.0));
@@ -572,10 +574,12 @@ fn update_position(
 
         let mut new_translation =
             transform.translation + vec3(velocity.0.x, velocity.0.y, 0.0) * ANT_SPEED;
-        
+
         // 하드 클램핑: 화면 밖으로 한 픽셀도 나가지 못하게 고정
         new_translation.x = new_translation.x.clamp(-width_half + 5.0, width_half - 5.0);
-        new_translation.y = new_translation.y.clamp(-height_half + 5.0, height_half - 5.0);
+        new_translation.y = new_translation
+            .y
+            .clamp(-height_half + 5.0, height_half - 5.0);
 
         if !new_translation.is_nan() {
             transform.translation = new_translation;
