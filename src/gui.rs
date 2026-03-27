@@ -129,22 +129,34 @@ fn settings_dialog(
                         toggle_ant_visibility(ant_query, settings.is_show_ants);
                     };
                     ui.separator();
-                    ui.label("Max Ants");
+                    ui.label("Max Ants")
+                        .on_hover_text("Set the population ceiling for your colony");
                     ui.add(egui::Slider::new(&mut settings.max_ants, 1..=5000));
-                    ui.label("Scout Ratio (%)");
+                    ui.label("Scout Ratio (%)").on_hover_text(
+                        "Adjust how many ants ignore pheromones to explore new territories",
+                    );
                     ui.add(egui::Slider::new(&mut settings.scout_ratio, 0.0..=10.0));
-                    ui.label("Ph Decay Rate");
+                    ui.label("Ph Decay Rate")
+                        .on_hover_text("Control how fast pheromone trails evaporate");
                     ui.add(
                         egui::Slider::new(&mut settings.ph_decay_rate, 0.01..=3.0)
                             .logarithmic(true),
                     );
 
                     ui.separator();
-                    if ui.button("Reset Pheromones (Wind)").clicked() {
+                    if ui
+                        .button("Reset Pheromones (Wind)")
+                        .on_hover_text("Wipe all existing trails")
+                        .clicked()
+                    {
                         pheromones.reset();
                     }
 
-                    if ui.button("Full Reset Simulation").clicked() {
+                    if ui
+                        .button("Full Reset Simulation")
+                        .on_hover_text("Clear everything and start over with 10 ants")
+                        .clicked()
+                    {
                         reset_event.send(crate::ResetSimulationEvent);
                     }
 
