@@ -8,8 +8,13 @@ use std::f32::consts::PI;
 
 // Function to find the n points with max z values
 pub fn find_n_points_with_max_z(points: &mut [(i32, i32, f32)], n: usize) -> Vec<(i32, i32, f32)> {
-    quickselect(points, 0, points.len() - 1, n);
-    points[points.len().saturating_sub(n)..].to_vec()
+    if points.is_empty() {
+        return Vec::new();
+    }
+    let len = points.len();
+    quickselect(points, 0, len - 1, n);
+    let start = len.saturating_sub(n);
+    points[start..].to_vec()
 }
 
 pub fn calc_weighted_midpoint(points: &[(i32, i32, f32)]) -> Vec2 {

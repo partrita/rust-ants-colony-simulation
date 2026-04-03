@@ -13,3 +13,13 @@ use bevy::prelude::Event;
 
 #[derive(Event)]
 pub struct ResetSimulationEvent;
+#[cfg(test)]
+mod tests {
+    use crate::utils::find_n_points_with_max_z;
+
+    #[test]
+    fn test_find_n_points_with_max_z_empty() {
+        let mut points = vec![];
+        find_n_points_with_max_z(&mut points, 5);
+    }
+}
