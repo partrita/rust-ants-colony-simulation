@@ -191,10 +191,11 @@ fn record_path_system(mut ant_query: Query<(&mut Ant, &Transform, &CurrentTask)>
             if let Some(index) = loop_index {
                 ant.path_history.truncate(index + 1);
             } else {
-                if ant.path_history.is_empty()
-                    || ant.path_history.last().unwrap().distance_squared(pos)
-                        > ANT_PATH_RECORD_DISTANCE_SQ
-                {
+                let should_push = ant.path_history.last().is_none_or(|last_pos| {
+                    last_pos.distance_squared(pos) > ANT_PATH_RECORD_DISTANCE_SQ
+                });
+
+                if should_push {
                     ant.path_history.push(pos);
                 }
             }
