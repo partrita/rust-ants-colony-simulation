@@ -1,3 +1,5 @@
+// 🛡️ Security Enhancement: Prevent memory safety vulnerabilities by forbidding unsafe code.
+#![forbid(unsafe_code)]
 pub mod ant;
 pub mod configs;
 pub mod food;
