@@ -20,11 +20,12 @@ fn manual_food_spawn_system(
     windows: Query<&Window>,
     camera_query: Query<(&Camera, &GlobalTransform)>,
 ) {
-    if keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
-        if mouse_button_input.just_pressed(MouseButton::Left) {
-            let window = windows.single();
-            let (camera, camera_transform) = camera_query.single();
-
+    if (keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight))
+        && mouse_button_input.just_pressed(MouseButton::Left)
+    {
+        if let (Ok(window), Ok((camera, camera_transform))) =
+            (windows.get_single(), camera_query.get_single())
+        {
             if let Some(world_position) = window
                 .cursor_position()
                 .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
