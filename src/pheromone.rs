@@ -75,33 +75,34 @@ fn pheromone_image_update(
     pheromone: Res<Pheromones>,
     mut image_handle_query: Query<&mut Handle<Image>, With<PheromoneImageRender>>,
 ) {
-    let mut img_handle = image_handle_query.single_mut();
-    let (w, h) = (
-        W as usize / PH_UNIT_GRID_SIZE,
-        H as usize / PH_UNIT_GRID_SIZE,
-    );
-    let mut bytes = vec![0; w * h * 4];
-
-    if sim_settings.is_show_food_ph {
-        add_map_to_grid_img(
-            pheromone.to_food.get_signals(),
-            &pheromone.to_food.color,
-            &mut bytes,
-            true,
+    if let Ok(mut img_handle) = image_handle_query.get_single_mut() {
+        let (w, h) = (
+            W as usize / PH_UNIT_GRID_SIZE,
+            H as usize / PH_UNIT_GRID_SIZE,
         );
-    }
+        let mut bytes = vec![0; w * h * 4];
 
-    let pheromone_map = Image::new(
-        Extent3d {
-            width: w as u32,
-            height: h as u32,
-            ..Default::default()
-        },
-        TextureDimension::D2,
-        bytes,
-        TextureFormat::Rgba8Unorm,
-    );
-    *img_handle = textures.add(pheromone_map);
+        if sim_settings.is_show_food_ph {
+            add_map_to_grid_img(
+                pheromone.to_food.get_signals(),
+                &pheromone.to_food.color,
+                &mut bytes,
+                true,
+            );
+        }
+
+        let pheromone_map = Image::new(
+            Extent3d {
+                width: w as u32,
+                height: h as u32,
+                ..Default::default()
+            },
+            TextureDimension::D2,
+            bytes,
+            TextureFormat::Rgba8Unorm,
+        );
+        *img_handle = textures.add(pheromone_map);
+    }
 }
 
 fn setup(mut commands: Commands) {
