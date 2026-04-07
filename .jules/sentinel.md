@@ -7,3 +7,7 @@
 **Vulnerability:** Calling `.single()` or `.single_mut()` on a Bevy ECS query panics and crashes the application (Denial of Service) if there is not exactly one entity that matches the query.
 **Learning:** In interactive or dynamic contexts, entities like the main window or camera can occasionally un-mount or re-mount, or simply not be correctly matched. Panics in the engine loop cause an unrecoverable crash.
 **Prevention:** Always use `.get_single()` or `.get_single_mut()` and handle the `Result` gracefully (e.g. via `if let Ok(...)`) to fail securely without crashing the application.
+## 2024-04-07 - Denial of Service (DoS) Risk in Bevy ECS Queries
+**Vulnerability:** The use of `.single_mut()` (and potentially `.single()`) on Bevy `Query` objects can cause unrecoverable thread panics if the query matches zero or more than one entities. This could happen temporarily during loading or when components dynamically unmount, leading to a Denial of Service (crash) in the main simulation thread.
+**Learning:** Hard-failing assumptions in ECS queries introduces brittle constraints in games/simulations where entity counts can fluctuate temporarily.
+**Prevention:** Always use `.get_single_mut()` or `.get_single()` combined with `if let Ok(...)` or appropriate error handling to safely update entities without panicking the application.

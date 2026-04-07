@@ -53,11 +53,12 @@ fn update_viz_grid_visibility(
     sim_settings: Res<SimSettings>,
     mut query: Query<&mut Visibility, With<PathVizImageRender>>,
 ) {
-    let mut img_visibility = query.single_mut();
-    if sim_settings.is_show_ants_path {
-        *img_visibility = Visibility::Visible;
-    } else {
-        *img_visibility = Visibility::Hidden;
+    if let Ok(mut img_visibility) = query.get_single_mut() {
+        if sim_settings.is_show_ants_path {
+            *img_visibility = Visibility::Visible;
+        } else {
+            *img_visibility = Visibility::Hidden;
+        }
     }
 }
 
@@ -89,31 +90,32 @@ fn update_path_viz_image(
     viz_grid: Res<PathVizGrid>,
     mut query: Query<&mut Handle<Image>, With<PathVizImageRender>>,
 ) {
-    let mut img_handle = query.single_mut();
-    let (w, h) = (
-        W as usize / PH_UNIT_GRID_SIZE,
-        H as usize / PH_UNIT_GRID_SIZE,
-    );
+    if let Ok(mut img_handle) = query.get_single_mut() {
+        let (w, h) = (
+            W as usize / PH_UNIT_GRID_SIZE,
+            H as usize / PH_UNIT_GRID_SIZE,
+        );
 
-    let mut bytes = vec![0; w * h * 4];
-    add_map_to_grid_img(
-        viz_grid.dg_path.get_values(),
-        &VIZ_COLOR_TO_FOOD, // 한 가지 색상으로 통합
-        &mut bytes,
-        false,
-    );
+        let mut bytes = vec![0; w * h * 4];
+        add_map_to_grid_img(
+            viz_grid.dg_path.get_values(),
+            &VIZ_COLOR_TO_FOOD, // 한 가지 색상으로 통합
+            &mut bytes,
+            false,
+        );
 
-    let path_img = Image::new(
-        Extent3d {
-            width: w as u32,
-            height: h as u32,
-            ..Default::default()
-        },
-        TextureDimension::D2,
-        bytes,
-        TextureFormat::Rgba8Unorm,
-    );
-    *img_handle = textures.add(path_img);
+        let path_img = Image::new(
+            Extent3d {
+                width: w as u32,
+                height: h as u32,
+                ..Default::default()
+            },
+            TextureDimension::D2,
+            bytes,
+            TextureFormat::Rgba8Unorm,
+        );
+        *img_handle = textures.add(path_img);
+    }
 }
 
 impl PathVizGrid {
