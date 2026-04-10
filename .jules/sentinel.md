@@ -11,3 +11,8 @@
 **Vulnerability:** The use of `.single_mut()` (and potentially `.single()`) on Bevy `Query` objects can cause unrecoverable thread panics if the query matches zero or more than one entities. This could happen temporarily during loading or when components dynamically unmount, leading to a Denial of Service (crash) in the main simulation thread.
 **Learning:** Hard-failing assumptions in ECS queries introduces brittle constraints in games/simulations where entity counts can fluctuate temporarily.
 **Prevention:** Always use `.get_single_mut()` or `.get_single()` combined with `if let Ok(...)` or appropriate error handling to safely update entities without panicking the application.
+
+## 2024-04-10 - [Prevent DoS via Panics]
+**Vulnerability:** Use of `unwrap()`, `expect()`, or `panic!()` can cause unrecoverable crashes (Denial of Service).
+**Learning:** Even if the current codebase is clean of these macros, future code additions might introduce them.
+**Prevention:** Use `#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` at the crate level to enforce panic-free error handling at compile time.
