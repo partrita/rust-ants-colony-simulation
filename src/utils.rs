@@ -3,7 +3,7 @@ use bevy::{
     math::{vec2, vec3},
     prelude::*,
 };
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use std::f32::consts::PI;
 
 // Function to find the n points with max z values
@@ -97,13 +97,13 @@ pub fn vector_to_angle_deg(vec: Vec2) -> f32 {
 }
 
 pub fn get_rand_unit_vec3() -> Vec3 {
-    let mut rng = thread_rng();
-    vec3(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0).normalize()
+    let mut rng = rng();
+    vec3(rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0), 0.0).normalize()
 }
 
 pub fn get_rand_vec2() -> Vec2 {
-    let mut rng = thread_rng();
-    vec2(rng.gen_range(-W..W), rng.gen_range(-H..H))
+    let mut rng = rng();
+    vec2(rng.random_range(-W..W), rng.random_range(-H..H))
 }
 
 pub fn get_rand_unit_vec2() -> Vec2 {

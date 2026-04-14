@@ -9,7 +9,7 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use std::{collections::HashSet, f32::consts::PI, time::Duration};
 
 pub struct AntPlugin;
@@ -112,7 +112,7 @@ impl Plugin for AntPlugin {
 }
 
 pub fn spawn_ant(commands: &mut Commands, asset_server: &Res<AssetServer>, pos: Vec2) {
-    let mut rng = thread_rng();
+    let mut rng = rng();
     commands.spawn((
         SpriteBundle {
             texture: asset_server.load(SPRITE_ANT),
@@ -127,7 +127,7 @@ pub fn spawn_ant(commands: &mut Commands, asset_server: &Res<AssetServer>, pos: 
         Ant {
             path_history: Vec::new(),
             // 생성 시 타이머를 랜덤하게 초기화하여 업데이트 시점을 분산시킴
-            direction_timer: rng.gen_range(0.0..ANT_DIRECTION_UPDATE_INTERVAL),
+            direction_timer: rng.random_range(0.0..ANT_DIRECTION_UPDATE_INTERVAL),
         },
         CurrentTask(AntTask::FindFood),
         Velocity(get_rand_unit_vec2()),
@@ -350,7 +350,7 @@ fn periodic_direction_update(
 ) {
     (stats.food_cache_size, _) = pheromones.clear_cache();
     let pull_radius_sq = ANT_TARGET_AUTO_PULL_RADIUS * ANT_TARGET_AUTO_PULL_RADIUS;
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
     for (mut ant, mut acceleration, transform, current_task, velocity) in ant_query.iter_mut() {
         if let AntTask::FindHome = current_task.0 {
@@ -363,7 +363,7 @@ fn periodic_direction_update(
             continue; // 자신의 시간이 안 되었으면 통과
         }
         // 타이머 리셋 (0.5초 근처에서 약간의 무작위성을 주어 더 분산시킴)
-        ant.direction_timer = ANT_DIRECTION_UPDATE_INTERVAL + rng.gen_range(-0.1..0.1);
+        ant.direction_timer = ANT_DIRECTION_UPDATE_INTERVAL + rng.random_range(-0.1..0.1);
 
         let current_pos = transform.translation.truncate();
         let mut target = None;
@@ -378,7 +378,7 @@ fn periodic_direction_update(
         }
 
         let follow_ph_chance = 1.0 - (sim_settings.scout_ratio / 100.0);
-        if target.is_none() && rng.gen_bool(follow_ph_chance as f64) {
+        if target.is_none() && rng.random_bool(follow_ph_chance as f64) {
             target = pheromones.to_food.get_steer_target_filtered(
                 &transform.translation,
                 scan_radius.0,
@@ -388,7 +388,7 @@ fn periodic_direction_update(
 
         if let Some(target_vec) = target {
             let steering_force = get_steering_force(target_vec, current_pos, velocity.0);
-            acceleration.0 += steering_force * rng.gen_range(0.8..=1.5);
+            acceleration.0 += steering_force * rng.random_range(0.8..=1.5);
         } else {
             acceleration.0 += get_rand_unit_vec2() * 0.3;
         }
@@ -425,7 +425,7 @@ fn check_home_food_collisions(
     let home_radius_sq = HOME_RADIUS * HOME_RADIUS;
     let food_pickup_radius_sq = FOOD_PICKUP_RADIUS * FOOD_PICKUP_RADIUS;
     let ant_handle = asset_server.load(SPRITE_ANT);
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
     for (
         mut ant,
@@ -494,7 +494,7 @@ fn check_home_food_collisions(
                         commands.entity(food_entity).despawn_recursive();
                     }
 
-                    let delay = rng.gen_range(0.1..=2.0);
+                    let delay = rng.random_range(0.1..=2.0);
                     ant_task.0 = AntTask::PickingUp(delay);
                     velocity.0 = Vec2::ZERO;
                     acceleration.0 = Vec2::ZERO;
@@ -520,7 +520,7 @@ fn check_wall_collision(
     let height_half = H / 2.0;
     let margin = ANT_WALL_MARGIN;
     let home_pos = vec2(HOME_LOCATION.0, HOME_LOCATION.1);
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
     for (transform, mut velocity, mut acceleration, mut task, mut ph_strength) in
         ant_query.iter_mut()
@@ -529,7 +529,7 @@ fn check_wall_collision(
 
         // 화면 경계에 가까워지면 중앙으로 조향
         if pos.x.abs() > width_half - margin || pos.y.abs() > height_half - margin {
-            let mut target = vec2(rng.gen_range(-200.0..200.0), rng.gen_range(-200.0..200.0));
+            let mut target = vec2(rng.random_range(-200.0..200.0), rng.random_range(-200.0..200.0));
             if let AntTask::FindHome = task.0 {
                 target = home_pos;
             }

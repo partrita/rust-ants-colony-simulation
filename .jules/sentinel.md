@@ -16,3 +16,7 @@
 **Vulnerability:** Use of `unwrap()`, `expect()`, or `panic!()` can cause unrecoverable crashes (Denial of Service).
 **Learning:** Even if the current codebase is clean of these macros, future code additions might introduce them.
 **Prevention:** Use `#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` at the crate level to enforce panic-free error handling at compile time.
+## 2024-05-18 - Rand Dependency Unsoundness Vulnerability
+**Vulnerability:** `rand` version 0.8.5 has an unsoundness vulnerability when used with a custom logger (RUSTSEC-2026-0097).
+**Learning:** Vulnerabilities can exist in foundational dependencies. Upgrading to the latest major version (0.9.0) resolved the issue but required updating all call sites due to deprecations (e.g., `thread_rng` -> `rng`, `gen_range` -> `random_range`). Also, blindly updating other unrelated vulnerable dependencies like `kd-tree` may cause cascading breaking changes downstream and should be done with care.
+**Prevention:** Regularly audit foundational crates using `cargo audit` and keep them up-to-date, making sure to carefully read compilation warnings or errors when major version bumps introduce API changes.
