@@ -14,7 +14,7 @@ pub fn find_n_points_with_max_z(points: &mut [(i32, i32, f32)], n: usize) -> Vec
     let len = points.len();
     quickselect(points, 0, len - 1, n);
     let start = len.saturating_sub(n);
-    points[start..].to_vec()
+    points.get(start..).unwrap_or(&[]).to_vec()
 }
 
 pub fn calc_weighted_midpoint(points: &[(i32, i32, f32)]) -> Vec2 {
@@ -113,13 +113,15 @@ pub fn get_rand_unit_vec2() -> Vec2 {
 
 // Function to partition the array based on the pivot (max z value)
 fn partition(points: &mut [(i32, i32, f32)], low: usize, high: usize) -> usize {
-    let pivot = points[high].2;
+    let pivot = points.get(high).map(|p| p.2).unwrap_or(0.0);
     let mut i = low;
 
     for j in low..high {
-        if points[j].2 >= pivot {
-            points.swap(i, j);
-            i += 1;
+        if let Some(pj) = points.get(j) {
+            if pj.2 >= pivot {
+                points.swap(i, j);
+                i += 1;
+            }
         }
     }
 
