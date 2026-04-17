@@ -20,3 +20,8 @@
 **Vulnerability:** `rand` version 0.8.5 has an unsoundness vulnerability when used with a custom logger (RUSTSEC-2026-0097).
 **Learning:** Vulnerabilities can exist in foundational dependencies. Upgrading to the latest major version (0.9.0) resolved the issue but required updating all call sites due to deprecations (e.g., `thread_rng` -> `rng`, `gen_range` -> `random_range`). Also, blindly updating other unrelated vulnerable dependencies like `kd-tree` may cause cascading breaking changes downstream and should be done with care.
 **Prevention:** Regularly audit foundational crates using `cargo audit` and keep them up-to-date, making sure to carefully read compilation warnings or errors when major version bumps introduce API changes.
+
+## 2026-04-16 - [Prevent DoS via Panic from Array Indexing]
+**Vulnerability:** Use of direct array/slice indexing (e.g. `array[index]`) can cause out-of-bounds panics resulting in Denial of Service (DoS) if logic is flawed.
+**Learning:** The existing codebase had `#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` but missed array indexing hazards.
+**Prevention:** Added `clippy::indexing_slicing` to the `#![forbid(...)]` list and replaced all indexing with safe `.get()` and `.get_mut()` patterns with graceful fallback.

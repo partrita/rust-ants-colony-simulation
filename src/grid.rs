@@ -240,13 +240,15 @@ pub fn add_map_to_grid_img(
         let strength = cmp::min((*v as u32).saturating_mul(5), u8::MAX.into()) as u8;
 
         let idx = (idx as usize).saturating_mul(4);
-        if idx.saturating_add(3) >= img_bytes.len() || strength < PH_GRID_VIZ_MIN_STRENGTH {
+        if strength < PH_GRID_VIZ_MIN_STRENGTH {
             continue;
         }
 
-        img_bytes[idx + 3] = cmp::min(img_bytes[idx + 3].saturating_add(strength), PH_GRID_OPACITY);
-        img_bytes[idx] = color.0;
-        img_bytes[idx + 1] = color.1;
-        img_bytes[idx + 2] = color.2;
+        if let Some([r, g, b, a]) = img_bytes.get_mut(idx..idx.saturating_add(4)).and_then(|c| <&mut [u8; 4]>::try_from(c).ok()) {
+            *a = cmp::min(a.saturating_add(strength), PH_GRID_OPACITY);
+            *r = color.0;
+            *g = color.1;
+            *b = color.2;
+        }
     }
 }

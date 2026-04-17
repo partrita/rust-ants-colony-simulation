@@ -482,7 +482,9 @@ fn check_home_food_collisions(
                     if let Some(children) = children {
                         for &child in children.iter() {
                             if let Ok(mut text) = label_query.get_mut(child) {
-                                text.sections[0].value = food.units.to_string();
+                                if let Some(section) = text.sections.get_mut(0) {
+                                    section.value = food.units.to_string();
+                                }
                             }
                         }
                     }

@@ -1,7 +1,7 @@
 // 🛡️ Security Enhancement: Prevent memory safety vulnerabilities by forbidding unsafe code.
 #![forbid(unsafe_code)]
 // 🛡️ Security Enhancement: Prevent DoS by forbidding panics.
-#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
 use ants::{
     ant::{Ant, AntFollowCameraPos, AntPlugin, Food},
     food::FoodPlugin,
