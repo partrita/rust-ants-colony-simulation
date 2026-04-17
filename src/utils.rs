@@ -113,7 +113,7 @@ pub fn get_rand_unit_vec2() -> Vec2 {
 
 // Function to partition the array based on the pivot (max z value)
 fn partition(points: &mut [(i32, i32, f32)], low: usize, high: usize) -> usize {
-    let pivot = points.get(high).map(|p| p.2).unwrap_or(0.0);
+    let pivot = if let Some(p) = points.get(high) { p.2 } else { return low; };
     let mut i = low;
 
     for j in low..high {
