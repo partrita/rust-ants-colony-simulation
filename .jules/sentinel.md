@@ -25,3 +25,8 @@
 **Vulnerability:** Use of direct array/slice indexing (e.g. `array[index]`) can cause out-of-bounds panics resulting in Denial of Service (DoS) if logic is flawed.
 **Learning:** The existing codebase had `#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` but missed array indexing hazards.
 **Prevention:** Added `clippy::indexing_slicing` to the `#![forbid(...)]` list and replaced all indexing with safe `.get()` and `.get_mut()` patterns with graceful fallback.
+
+## 2024-05-24 - Fix Integer Underflow Panic in quickselect
+**Vulnerability:** The `find_n_points_with_max_z` function delegated to a `quickselect` implementation which panicked with an integer underflow `attempt to subtract with overflow` when the requested `n` parameter was `0`. This is a DoS vulnerability as Rust panics terminate the process (and are strictly forbidden in this codebase).
+**Learning:** Even internal helper methods must validate their arguments against boundary conditions like 0 before doing arithmetic involving subtraction, especially with unsigned integer types (`usize`).
+**Prevention:** Always validate integer inputs before subtracting from them (e.g. `n - 1`), especially if those inputs can logically be `0`. Return early for degenerate cases (`n == 0`).

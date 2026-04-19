@@ -244,7 +244,10 @@ pub fn add_map_to_grid_img(
             continue;
         }
 
-        if let Some([r, g, b, a]) = img_bytes.get_mut(idx..idx.saturating_add(4)).and_then(|c| <&mut [u8; 4]>::try_from(c).ok()) {
+        if let Some([r, g, b, a]) = img_bytes
+            .get_mut(idx..idx.saturating_add(4))
+            .and_then(|c| <&mut [u8; 4]>::try_from(c).ok())
+        {
             *a = cmp::min(a.saturating_add(strength), PH_GRID_OPACITY);
             *r = color.0;
             *g = color.1;
