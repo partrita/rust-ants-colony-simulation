@@ -103,7 +103,7 @@ pub fn get_rand_unit_vec3() -> Vec3 {
         rng.random_range(-1.0..1.0),
         0.0,
     )
-    .normalize()
+    .normalize_or_zero()
 }
 
 pub fn get_rand_vec2() -> Vec2 {
