@@ -531,7 +531,10 @@ fn check_wall_collision(
 
         // 화면 경계에 가까워지면 중앙으로 조향
         if pos.x.abs() > width_half - margin || pos.y.abs() > height_half - margin {
-            let mut target = vec2(rng.random_range(-200.0..200.0), rng.random_range(-200.0..200.0));
+            let mut target = vec2(
+                rng.random_range(-200.0..200.0),
+                rng.random_range(-200.0..200.0),
+            );
             if let AntTask::FindHome = task.0 {
                 target = home_pos;
             }

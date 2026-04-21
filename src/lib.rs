@@ -1,7 +1,12 @@
 // 🛡️ Security Enhancement: Prevent memory safety vulnerabilities by forbidding unsafe code.
 #![forbid(unsafe_code)]
 // 🛡️ Security Enhancement: Prevent DoS by forbidding panics.
-#![forbid(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
+#![forbid(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::indexing_slicing
+)]
 pub mod ant;
 pub mod configs;
 pub mod food;
@@ -25,5 +30,11 @@ mod tests {
     fn test_find_n_points_with_max_z_empty() {
         let mut points = vec![];
         find_n_points_with_max_z(&mut points, 5);
+    }
+
+    #[test]
+    fn test_find_n_points_with_max_z_n_zero() {
+        let mut points = vec![(0, 0, 1.0), (1, 1, 2.0)];
+        find_n_points_with_max_z(&mut points, 0);
     }
 }
