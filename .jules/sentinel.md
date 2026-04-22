@@ -30,3 +30,8 @@
 **Vulnerability:** The `find_n_points_with_max_z` function delegated to a `quickselect` implementation which panicked with an integer underflow `attempt to subtract with overflow` when the requested `n` parameter was `0`. This is a DoS vulnerability as Rust panics terminate the process (and are strictly forbidden in this codebase).
 **Learning:** Even internal helper methods must validate their arguments against boundary conditions like 0 before doing arithmetic involving subtraction, especially with unsigned integer types (`usize`).
 **Prevention:** Always validate integer inputs before subtracting from them (e.g. `n - 1`), especially if those inputs can logically be `0`. Return early for degenerate cases (`n == 0`).
+
+## 2024-05-24 - [Prevent DoS via Panic from Integer Underflow in ECS Systems]
+**Vulnerability:** Decrementing unsigned integers with direct subtraction (`food.units -= 1;`) inside Bevy ECS systems can cause an underflow panic. Since the application compiles with `#![forbid(clippy::panic)]` to prevent DoS via panics, missing these logic flaws undermines the security posture.
+**Learning:** Even simple logic (like picking up food units) must use safe arithmetic when handling unsigned integer boundaries, as an underflow will cause the main simulation thread to panic and the application to crash.
+**Prevention:** Always use safe operations like `.saturating_sub(1)` when decrementing unsigned integer counts to avoid underflows and panics.
