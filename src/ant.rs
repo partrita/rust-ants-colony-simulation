@@ -478,7 +478,7 @@ fn check_home_food_collisions(
                 if let Ok((_, mut food_transform, mut food, children)) =
                     food_query.get_mut(food_entity)
                 {
-                    food.units -= 1;
+                    food.units = food.units.saturating_sub(1);
                     if let Some(children) = children {
                         for &child in children.iter() {
                             if let Ok(mut text) = label_query.get_mut(child) {
