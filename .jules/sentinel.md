@@ -35,3 +35,7 @@
 **Vulnerability:** Decrementing unsigned integers with direct subtraction (`food.units -= 1;`) inside Bevy ECS systems can cause an underflow panic. Since the application compiles with `#![forbid(clippy::panic)]` to prevent DoS via panics, missing these logic flaws undermines the security posture.
 **Learning:** Even simple logic (like picking up food units) must use safe arithmetic when handling unsigned integer boundaries, as an underflow will cause the main simulation thread to panic and the application to crash.
 **Prevention:** Always use safe operations like `.saturating_sub(1)` when decrementing unsigned integer counts to avoid underflows and panics.
+## 2024-05-24 - [Dependency Vulnerability in Unmaintained crate `paste`]
+**Vulnerability:** The crate `paste` (version 1.0.15) was flagged by `cargo audit` as unmaintained and is considered a vulnerability risk (RUSTSEC-2024-0436). It was pulled in via the `kd-tree` dependency.
+**Learning:** Security vulnerabilities can originate deep within the dependency tree from unmaintained packages. While `bevy` itself also brings in `paste`, we can mitigate the risk incrementally by updating direct dependencies (like `kd-tree` to `0.6.2`) to versions that no longer rely on the vulnerable or unmaintained crate.
+**Prevention:** Regularly run `cargo audit` to identify vulnerable or unmaintained dependencies, and upgrade your direct dependencies to versions that drop the problematic sub-dependencies.

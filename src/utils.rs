@@ -147,7 +147,7 @@ fn quickselect(points: &mut [(i32, i32, f32)], low: usize, high: usize, n: usize
         } else if pivot_index > n.saturating_sub(1) {
             quickselect(points, low, pivot_index.saturating_sub(1), n);
         } else {
-            quickselect(points, pivot_index + 1, high, n);
+            quickselect(points, pivot_index.saturating_add(1), high, n);
         }
     }
 }

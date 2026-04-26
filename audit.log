@@ -1,5 +1,5 @@
     Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
-      Loaded 1051 security advisories (from /home/jules/.cargo/advisory-db)
+      Loaded 1057 security advisories (from /home/jules/.cargo/advisory-db)
     Updating crates.io index
     Scanning Cargo.lock for vulnerabilities (498 crate dependencies)
 Crate:     instant
@@ -246,7 +246,7 @@ ID:        RUSTSEC-2024-0436
 URL:       https://rustsec.org/advisories/RUSTSEC-2024-0436
 Dependency tree:
 paste 1.0.15
-├── kd-tree 0.5.3
+├── kd-tree 0.6.2
 │   └── ants 0.1.0
 └── accesskit_windows 0.14.3
     └── accesskit_winit 0.14.4
