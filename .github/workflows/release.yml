@@ -44,6 +44,9 @@ jobs:
       # 2. Rust 툴체인 설정
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          # Rust 1.100.0 regressed objc2 builds on macOS (rust-lang/rust#166229)
+          toolchain: 1.99.0
 
       # 3. 빌드 속도 향상을 위한 Rust 캐시 설정
       - name: Rust Cache
